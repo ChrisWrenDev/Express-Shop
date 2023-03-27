@@ -1,23 +1,23 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
-const p = path.join(
+const filePath = path.join(
   path.dirname(process.mainModule.filename),
-  'data',
-  'cart.json'
+  "data",
+  "cart.json"
 );
 
 module.exports = class Cart {
   static addProduct(id, productPrice) {
     // Fetch the previous cart
-    fs.readFile(p, (err, fileContent) => {
+    fs.readFile(filePath, (err, fileContent) => {
       let cart = { products: [], totalPrice: 0 };
       if (!err) {
         cart = JSON.parse(fileContent);
       }
       // Analyze the cart => Find existing product
       const existingProductIndex = cart.products.findIndex(
-        prod => prod.id === id
+        (prod) => prod.id === id
       );
       const existingProduct = cart.products[existingProductIndex];
       let updatedProduct;
@@ -32,9 +32,40 @@ module.exports = class Cart {
         cart.products = [...cart.products, updatedProduct];
       }
       cart.totalPrice = cart.totalPrice + +productPrice;
-      fs.writeFile(p, JSON.stringify(cart), err => {
+      fs.writeFile(filePath, JSON.stringify(cart), (err) => {
         console.log(err);
       });
+    });
+  }
+
+  static removeProduct(id, productPrice) {
+    fs.readFile(filePath, (err, content) => {
+      if (err) return;
+      const updatedCart = { ...JSON.parse(content) };
+
+      const product = updatedCart.products.find((product) => product.id === id);
+      if (!product) return;
+
+      const productQty = product.qty;
+      updatedCart.products = updatedCart.products.filter(
+        (product) => product.id !== id
+      );
+      updatedCart.totalPrice -= productPrice * productQty;
+
+      fs.writeFile(filePath, JSON.stringify(updatedCart), (err) => {
+        console.log(err);
+      });
+    });
+  }
+
+  static getCart(callback) {
+    fs.readFile(filePath, (err, content) => {
+      if (err) {
+        callback(null);
+      } else {
+        const cart = JSON.parse(content);
+        callback(cart);
+      }
     });
   }
 };
